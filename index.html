@@ -761,24 +761,26 @@
 
 <script>
 /* ══════════════════════════════════════════
-   SITTING PLAN — Google Sheets integration
+   SITTING PLAN — Google Sheets CSV
    ══════════════════════════════════════════ */
 
-const STORAGE_KEY = 'baptism_sheets_url';
+const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1xWfuJW91ktUUjoS7W6scrxvMG_lb9VWJH1EZTFjjZMI/gviz/tq?tqx=out:csv&sheet=Sheet1';
 
-function getSheetsUrl() {
-  return localStorage.getItem(STORAGE_KEY) || '';
-}
-
-function saveSheetUrl() {
-  const url = document.getElementById('sheetUrlInput').value.trim();
-  if (!url.startsWith('https://script.google.com')) {
-    alert('Το URL δεν φαίνεται σωστό. Βεβαιώσου ότι αντέγραψες το Web App URL από το Apps Script.');
-    return;
+/* ── CSV PARSER ── */
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  // skip header row (row 0)
+  const tableMap = {};
+  for (let i = 1; i < lines.length; i++) {
+    // handle quoted CSV fields
+    const cols = lines[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+    const tableName = (cols[0] || '').replace(/^"|"$/g, '').trim();
+    const guest     = (cols[1] || '').replace(/^"|"$/g, '').trim();
+    if (!tableName) continue;
+    if (!tableMap[tableName]) tableMap[tableName] = [];
+    if (guest) tableMap[tableName].push(guest);
   }
-  localStorage.setItem(STORAGE_KEY, url);
-  loadFromSheets();
-  toggleConfig();
+  return Object.entries(tableMap).map(([name, guests]) => ({ name, guests }));
 }
 
 /* ── RENDER ── */
@@ -788,6 +790,7 @@ function render(tables) {
   grid.innerHTML = '';
 
   if (!tables || tables.length === 0) {
+    empty.textContent = 'Το sitting plan θα ανακοινωθεί σύντομα…';
     empty.style.display = 'block';
     return;
   }
@@ -812,48 +815,36 @@ function render(tables) {
 
 /* ── LOAD FROM SHEETS ── */
 async function loadFromSheets() {
-  const url = getSheetsUrl();
   const empty = document.getElementById('emptyMsg');
-  const grid = document.getElementById('tablesGrid');
-
-  if (!url) {
-    empty.textContent = 'Το sitting plan θα ανακοινωθεί σύντομα…';
-    empty.style.display = 'block';
-    grid.innerHTML = '';
-    return;
-  }
+  const grid  = document.getElementById('tablesGrid');
 
   empty.textContent = '⏳ Φόρτωση sitting plan…';
   empty.style.display = 'block';
   grid.innerHTML = '';
 
   try {
-    const res = await fetch(url);
-    const data = await res.json();
-    // data expected: [ { name: "Τραπέζι 1", guests: ["Άννα", "Κώστας"] }, … ]
-    render(data);
+    const res = await fetch(SHEETS_CSV_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const csv = await res.text();
+    const tables = parseCSV(csv);
+    render(tables);
   } catch (e) {
-    empty.textContent = '⚠️ Δεν ήταν δυνατή η φόρτωση. Έλεγξε το URL ή ανανέωσε τη σελίδα.';
+    empty.textContent = '⚠️ Δεν ήταν δυνατή η φόρτωση. Ανανέωσε τη σελίδα.';
     empty.style.display = 'block';
     grid.innerHTML = '';
     console.error(e);
   }
 }
 
-/* ── CONFIG PANEL TOGGLE ── */
+/* ── CONFIG PANEL TOGGLE (για μελλοντική χρήση) ── */
 function toggleConfig() {
   const panel = document.getElementById('configPanel');
-  const btn = document.getElementById('showConfigBtn');
-  const inp = document.getElementById('sheetUrlInput');
-  if (panel.style.display === 'none') {
-    panel.style.display = 'block';
-    btn.style.display = 'none';
-    inp.value = getSheetsUrl();
-  } else {
-    panel.style.display = 'none';
-    btn.style.display = 'inline-block';
-  }
+  const btn   = document.getElementById('showConfigBtn');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  btn.style.display   = panel.style.display === 'none' ? 'inline-block' : 'none';
 }
+
+function saveSheetUrl() { toggleConfig(); } // no-op, URL is hardcoded
 
 /* ── SCROLL REVEAL ── */
 const revealEls = document.querySelectorAll('.reveal');
@@ -863,14 +854,6 @@ const observer = new IntersectionObserver(entries => {
 revealEls.forEach(el => observer.observe(el));
 
 /* ── INIT ── */
-// Pre-fill URL input if already saved
-const savedUrl = getSheetsUrl();
-if (savedUrl) {
-  document.getElementById('sheetUrlInput').value = savedUrl;
-  // Hide config by default if already configured
-  document.getElementById('configPanel').style.display = 'none';
-  document.getElementById('showConfigBtn').style.display = 'inline-block';
-}
 loadFromSheets();
 </script>
 </body>
