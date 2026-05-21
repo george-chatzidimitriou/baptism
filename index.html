@@ -777,12 +777,32 @@ async function loadFromSheets() {
 }
 
 document.getElementById('guestSearch').addEventListener('input', function () {
-  const term = this.value.trim().toLowerCase();
+  function normalizeGreek(str) {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
 
-  const filtered = allGuests.filter(guest =>
-    guest.name.toLowerCase().includes(term) ||
-    guest.table.toLowerCase().includes(term)
-  );
+document.getElementById('guestSearch').addEventListener('input', function () {
+
+  const term = normalizeGreek(this.value.trim());
+
+  const filtered = allGuests.filter(guest => {
+
+    const guestName = normalizeGreek(guest.name);
+    const tableName = normalizeGreek(guest.table);
+
+    return (
+      guestName.includes(term) ||
+      tableName.includes(term)
+    );
+
+  });
+
+  renderGuestList(filtered);
+
+});
 
   renderGuestList(filtered);
 });
