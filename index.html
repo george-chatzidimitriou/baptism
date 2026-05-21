@@ -534,7 +534,7 @@
 <nav class="floating-nav">
   <a href="#program">Πρόγραμμα</a>
   <a href="#locations">Τοποθεσίες</a>
-  <a href="#sitting">Sitting</a>
+  <a href="#sitting">Seating</a>
 </nav>
 <div class="hero">
   <svg class="daisy" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -662,7 +662,7 @@
 
 <div id="sitting" class="sitting-section">
   <div class="sitting-inner">
-    <p class="section-label">Sitting Plan</p>
+    <p class="section-label">Seating Plan</p>
     <h2 class="section-title reveal">Βρες τη θέση σου</h2>
     <div class="thin-line"></div>
 
@@ -676,7 +676,7 @@
     <div class="tables-grid" id="tablesGrid"></div>
 
     <div id="emptyMsg" class="sitting-empty" style="display:none;">
-      Το sitting plan θα ανακοινωθεί σύντομα…
+      Το seating plan θα ανακοινωθεί σύντομα…
     </div>
   </div>
 </div>
@@ -750,7 +750,7 @@ function render(tables) {
   const empty = document.getElementById('emptyMsg');
 
   if (!tables || tables.length === 0) {
-    empty.textContent = 'Το sitting plan θα ανακοινωθεί σύντομα…';
+    empty.textContent = 'Το seating plan θα ανακοινωθεί σύντομα…';
     empty.style.display = 'block';
     return;
   }
@@ -823,7 +823,7 @@ async function loadFromSheets() {
   const empty = document.getElementById('emptyMsg');
   const grid = document.getElementById('tablesGrid');
 
-  empty.textContent = '⏳ Φόρτωση sitting plan…';
+  empty.textContent = '⏳ Φόρτωση seating plan…';
   empty.style.display = 'block';
   grid.innerHTML = '';
 
